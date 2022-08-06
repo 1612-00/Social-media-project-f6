@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { AppObject } from 'src/share/common';
+import { AppObject } from '../../../share/common';
 
 export type UserDocument = User & Document;
 

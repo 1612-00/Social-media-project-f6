@@ -2,16 +2,14 @@ import * as bcrypt from 'bcrypt';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { UserRepository } from './user.repository';
 import { CreateUserDto } from './dto';
-import { ERROR } from 'src/share/common';
+import { ERROR } from '../../share/common';
 import { JwtService } from '@nestjs/jwt';
-import { JWT_CONFIG } from 'src/config';
 import { User } from './schema/UserSchema';
-import { MailService } from 'src/config/mail/mail.service';
-import { ResetPasswordDto } from 'src/share/auth/dto';
+import { ResetPasswordDto } from '../../share/auth/dto';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly userRepository: UserRepository, private readonly mailService: MailService) {}
+  constructor(private readonly userRepository: UserRepository, private readonly jwtService: JwtService) {}
 
   async create(createUserDto: CreateUserDto) {
     const userFound = await this.userRepository.findOneByConditionAndProtectField(
@@ -31,14 +29,8 @@ export class UserService {
   }
 
   async confirmAccount(token: string) {
-    const jwtService = new JwtService({
-      secret: JWT_CONFIG.secret,
-      signOptions: {
-        expiresIn: JWT_CONFIG.expiresIn,
-      },
-    });
     // Verify token
-    const user = await jwtService.verify(token);
+    const user = await this.jwtService.verify(token);
 
     // Token valid
     const userFound: User = await this.userRepository.findOneByConditionAndProtectField(
@@ -63,14 +55,8 @@ export class UserService {
   }
 
   async resetPassword(resetPasswordDto: ResetPasswordDto) {
-    const jwtService = new JwtService({
-      secret: JWT_CONFIG.secret,
-      signOptions: {
-        expiresIn: JWT_CONFIG.expiresIn,
-      },
-    });
     // Verify token
-    const user = await jwtService.verify(resetPasswordDto.token);
+    const user = await this.jwtService.verify(resetPasswordDto.token);
 
     const hash = bcrypt.hashSync(resetPasswordDto.newPassword, 10);
 

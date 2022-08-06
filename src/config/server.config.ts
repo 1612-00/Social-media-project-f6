@@ -1,8 +1,8 @@
 import { INestApplication, VersioningType } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { HttpExceptionFilter } from 'src/share/filter/http-exception.filter';
-import { TransformInterceptor } from 'src/share/interceptors/transform.interceptor';
-import { ValidationPipe } from 'src/share/pipe/validation.pipe';
+import { HttpExceptionFilter } from '../share/filter/http-exception.filter';
+import { TransformInterceptor } from '../share/interceptors/transform.interceptor';
+import { ValidationPipe } from '../share/pipe/validation.pipe';
 
 export default function (app: INestApplication) {
   app.enableCors({
