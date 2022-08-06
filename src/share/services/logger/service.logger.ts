@@ -30,13 +30,7 @@ const formatLog = printf(({ label, level, message }) => {
 
 const transports = [new winston.transports.Console()];
 export class Logger {
-  public static log(
-    data?: string,
-    level = 'info',
-    method?: string,
-    path?: string,
-    status?: string,
-  ) {
+  public static log(data?: string, level = 'info', method?: string, path?: string, status?: string) {
     let logLabel = `[${getTimeVietNamHCM()}]`;
     if (status) {
       logLabel += ` [${status}]`;

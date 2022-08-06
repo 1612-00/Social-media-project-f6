@@ -3,6 +3,7 @@ import { UserRepository } from './user.repository';
 import { UserService } from './user.service';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { BadRequestException } from '@nestjs/common';
 
 describe(' Test suite', () => {
   let service: UserService;
@@ -39,29 +40,65 @@ describe(' Test suite', () => {
     service = module.get<UserService>(UserService);
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
-  });
-
-  it('should be created user', async () => {
+  describe('should be created user', () => {
     const dto = {
       email: 'nguyenducanh1.ldb@gmail.com',
       password: 'ducanh',
       fullName: 'Nguyen Duc Anh',
     };
-    expect(await service.create(dto)).toEqual({
-      ...dto,
-      password: bcrypt.hashSync(dto.password, 10),
+
+    it('create user no exception', async () => {
+      expect(await service.create(dto)).toEqual({
+        ...dto,
+        password: bcrypt.hashSync(dto.password, 10),
+      });
+    });
+
+    it('exception: email already exist', async () => {
+      mockUserRepository.findOneByConditionAndProtectField.mockResolvedValue((condition) =>
+        Promise.resolve({ ...condition }),
+      );
+      try {
+        await service.create(dto);
+      } catch (error) {
+        expect(error).toBeInstanceOf(BadRequestException);
+      }
     });
   });
 
-  it('should be confirm user account', async () => {
-    mockUserRepository.findOneByConditionAndProtectField.mockResolvedValue((condition) => Promise.resolve({}));
-    expect(await service.confirmAccount('token')).toEqual('Account verified successfully');
+  describe('should be confirm user account', () => {
+    it('confirm account no exception', async () => {
+      mockUserRepository.findOneByConditionAndProtectField.mockResolvedValue((condition) =>
+        Promise.resolve({ ...condition }),
+      );
+      expect(await service.confirmAccount('token')).toEqual('Account verified successfully');
+    });
+
+    it('exception: token invalid', async () => {
+      mockJwtService.verify.mockRejectedValue(new Error());
+      try {
+        await service.confirmAccount('token');
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error);
+      }
+    });
   });
 
-  it('should be reset password', async () => {
+  describe('should be reset password', () => {
     const dto = { token: 'token', newPassword: 'password' };
-    expect(await service.resetPassword(dto)).toEqual(expect.objectContaining({ password: dto.newPassword }));
+
+    it('reset password no exception', async () => {
+      mockJwtService.verify.mockResolvedValue((token) => expect.any(Object));
+      expect(await service.resetPassword(dto)).toEqual(expect.objectContaining({ password: dto.newPassword }));
+    });
+
+    it('exception: token invalid', async () => {
+      mockJwtService.verify.mockRejectedValue(new Error());
+      try {
+        await service.resetPassword(dto);
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error);
+      }
+    });
   });
 });
