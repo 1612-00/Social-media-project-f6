@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
 import { User } from 'src/api/user/schema/UserSchema';
-import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class MailService {
@@ -30,40 +29,26 @@ export class MailService {
       });
   }
 
-  public confirmAccount(user: User, accessToken: string): void {
-    this.mailerService
-      .sendMail({
-        to: user.email,
-        subject: 'Confirm your account',
-        template: 'confirm-user',
-        context: {
-          username: user.fullName,
-          confirmLink: `http://localhost:8080/api/v1/user/confirm-account/${accessToken}`,
-        },
-      })
-      .then((success) => {
-        console.log(success);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+  public async confirmAccount(user: User, accessToken: string) {
+    return await this.mailerService.sendMail({
+      to: user.email,
+      subject: 'Confirm your account',
+      template: 'confirm-user',
+      context: {
+        username: user.fullName,
+        confirmLink: `http://localhost:8080/api/v1/user/confirm-account/${accessToken}`,
+      },
+    });
   }
 
-  public forgotPassword(email: string, accessToken): void {
-    this.mailerService
-      .sendMail({
-        to: email,
-        subject: 'Forgot password',
-        template: 'forgot-password',
-        context: {
-          token: accessToken,
-        },
-      })
-      .then((success) => {
-        console.log(success);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+  public async forgotPassword(email: string, accessToken) {
+    return await this.mailerService.sendMail({
+      to: email,
+      subject: 'Forgot password',
+      template: 'forgot-password',
+      context: {
+        token: accessToken,
+      },
+    });
   }
 }

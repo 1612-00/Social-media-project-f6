@@ -13,6 +13,10 @@ export const ERROR = {
     CODE: 'sys00001',
     MESSAGE: 'Account is not verified.',
   },
+  SEND_MAIL_FAILURE: {
+    CODE: 'sys00001',
+    MESSAGE: 'Send email failure.',
+  },
 
   // user
   USER_NOT_FOUND: {

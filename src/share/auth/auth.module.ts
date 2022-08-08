@@ -6,6 +6,7 @@ import { JWT_CONFIG } from 'src/config';
 import { MailModule } from 'src/config/mail/mail.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
   imports: [
@@ -20,7 +21,7 @@ import { AuthService } from './auth.service';
     MailModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService],
+  providers: [AuthService, JwtStrategy],
   exports: [AuthService],
 })
 export class AuthModule {}

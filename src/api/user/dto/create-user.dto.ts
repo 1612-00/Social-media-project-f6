@@ -1,5 +1,6 @@
 import { IsEmail, IsEnum, IsNotEmpty, IsString } from 'class-validator';
 import { AppObject } from 'src/share/common';
+import { UserRole } from '../role/role.enum';
 
 export class CreateUserDto {
   @IsEmail()
@@ -16,6 +17,6 @@ export class CreateUserDto {
   fullName: string;
 
   @IsString()
-  @IsEnum(AppObject.ROLE)
-  role?: string = AppObject.ROLE.BASIC;
+  @IsEnum(UserRole)
+  role?: string = UserRole.User;
 }

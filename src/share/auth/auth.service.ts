@@ -1,22 +1,19 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { CreateUserDto } from 'src/api/user/dto';
-import { UserService } from 'src/api/user/user.service';
-import { JWT_CONFIG } from 'src/config';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { CreateUserDto } from '../../api/user/dto';
+import { UserService } from '../../api/user/user.service';
+import { JWT_CONFIG } from '../../config';
 import { RegisterResponseDto } from './dto/register-response.dto';
 import { JwtPayload } from './payloads/jwt-payload';
 import { JwtService } from '@nestjs/jwt';
 import { ForgotPasswordDto, LoginResponseDto, LoginUserDto } from './dto';
-import { UserRepository } from 'src/api/user/user.repository';
 import { ERROR } from '../common';
 import * as bcrypt from 'bcrypt';
-import { MailService } from 'src/config/mail/mail.service';
-import { User } from 'src/api/user/schema/UserSchema';
+import { MailService } from '../../config/mail/mail.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly userService: UserService,
-    private readonly userRepository: UserRepository,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
   ) {}
@@ -24,7 +21,9 @@ export class AuthService {
   async register(createUserDto: CreateUserDto): Promise<RegisterResponseDto> {
     const user = await this.userService.create(createUserDto);
     const payload: JwtPayload = {
+      id: user._id.toString(),
       email: user.email,
+      role: user.role,
     };
     const jwtExpiresIn = parseInt(JWT_CONFIG.expiresIn);
 
@@ -34,7 +33,9 @@ export class AuthService {
     });
     delete user.password;
 
-    this.mailService.confirmAccount(user, accessToken);
+    const sentMailConfirm = this.mailService.confirmAccount(user, accessToken);
+
+    if (!sentMailConfirm) throw new ForbiddenException(ERROR.SEND_MAIL_FAILURE.MESSAGE);
 
     return {
       user,
@@ -44,11 +45,11 @@ export class AuthService {
   }
 
   async login(loginUserDto: LoginUserDto): Promise<LoginResponseDto> {
-    const user: User = await this.userRepository.findOneByCondition({
+    const user = await this.userService.getUserByCondition({
       email: loginUserDto.email,
     });
-    if (!user) {
-      throw new NotFoundException(ERROR.USER_NOT_FOUND.MESSAGE);
+    if (!user.password) {
+      throw new NotFoundException(ERROR.USERNAME_OR_PASSWORD_INCORRECT.MESSAGE);
     }
     const matchesPassword = bcrypt.compareSync(loginUserDto.password, user.password);
     if (!matchesPassword) {
@@ -56,7 +57,9 @@ export class AuthService {
     }
 
     const payload: JwtPayload = {
+      id: user._id.toString(),
       email: user.email,
+      role: user.role,
     };
     const jwtExpiresIn = parseInt(JWT_CONFIG.expiresIn);
 
@@ -67,7 +70,9 @@ export class AuthService {
 
     // if user unauthenticated, throw an error
     if (!user.isVerified) {
-      this.mailService.confirmAccount(user, accessToken);
+      const sentMailConfirm = this.mailService.confirmAccount(user, accessToken);
+      if (!sentMailConfirm) throw new ForbiddenException(ERROR.SEND_MAIL_FAILURE.MESSAGE);
+
       throw new BadRequestException(ERROR.UNAUTHENTICATED_USER.MESSAGE);
     }
 
@@ -78,19 +83,18 @@ export class AuthService {
   }
 
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
-    const user: User = await this.userRepository.findOneByCondition({
+    const user = await this.userService.getUserByCondition({
       email: forgotPasswordDto.email,
     });
-    if (!user) {
-      throw new NotFoundException(ERROR.USER_NOT_FOUND.MESSAGE);
-    }
 
     if (!user.isVerified) {
       throw new BadRequestException(ERROR.ACCOUNT_IS_NOT_VERIFIED.MESSAGE);
     }
 
     const payload: JwtPayload = {
+      id: user._id.toString(),
       email: user.email,
+      role: user.role,
     };
     const jwtExpiresIn = parseInt(JWT_CONFIG.expiresIn);
 
@@ -99,8 +103,9 @@ export class AuthService {
       expiresIn: jwtExpiresIn,
     });
 
-    this.mailService.forgotPassword(user.email, accessToken);
-    return 'please check your email';
+    const sentMailConfirm = this.mailService.forgotPassword(user.email, accessToken);
+    if (!sentMailConfirm) throw new ForbiddenException(ERROR.SEND_MAIL_FAILURE.MESSAGE);
+    return { status: 200, message: 'please check your email' };
   }
 
   async resetPassword(resetPasswordDto) {

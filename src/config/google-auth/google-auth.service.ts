@@ -19,20 +19,24 @@ export class GoogleAuthService {
         },
         'password',
       );
+
+      let newUser: any;
       if (!userFound) {
         const createUserDto: CreateGmailAccountDto = {
           email: req.user.email,
           password: null,
-          fullName: req.user.firstName + req.user.lastName,
+          fullName: req.user.firstName + ' ' + req.user.lastName,
           isVerified: true,
         };
-        await this.userRepository.create({
+        newUser = await this.userRepository.create({
           ...createUserDto,
         });
       }
 
       const payload: JwtPayload = {
-        email: req.user.email,
+        id: !userFound ? newUser._id.toString() : userFound._id.toString(),
+        email: !userFound ? newUser.email : userFound.email,
+        role: !userFound ? newUser.role : userFound.role,
       };
       const jwtExpiresIn = parseInt(JWT_CONFIG.expiresIn);
       const accessToken = await this.jwtService.signAsync(payload, {

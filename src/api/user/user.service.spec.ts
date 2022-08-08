@@ -3,12 +3,13 @@ import { UserRepository } from './user.repository';
 import { UserService } from './user.service';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 describe(' Test suite', () => {
   let service: UserService;
 
   const mockUserRepository = {
+    findOneByCondition: jest.fn((condition) => ({ ...condition })),
     findOneByConditionAndProtectField: jest.fn((condition) => null),
     hashPassword: jest.spyOn(bcrypt, 'hashSync').mockImplementation((password) => password),
     create: jest.fn((dto) => ({
@@ -38,6 +39,23 @@ describe(' Test suite', () => {
     }).compile();
 
     service = module.get<UserService>(UserService);
+  });
+
+  describe('should be get user by email', () => {
+    it('should return user by email', async () => {
+      expect(await service.getUserByCondition({ email: 'email' })).toEqual({
+        email: 'email',
+      });
+    });
+
+    it('exception: user not exist', async () => {
+      mockUserRepository.findOneByCondition((condition) => null);
+      try {
+        await service.getUserByCondition({ email: 'email' });
+      } catch (error) {
+        expect(error).toBeInstanceOf(NotFoundException);
+      }
+    });
   });
 
   describe('should be created user', () => {

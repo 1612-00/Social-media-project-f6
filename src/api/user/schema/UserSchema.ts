@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { AppObject } from '../../../share/common';
+import { UserRole } from '../role/role.enum';
 
 export type UserDocument = User & Document;
 
@@ -36,8 +37,8 @@ export class User {
   @Prop({
     required: true,
     type: String,
-    enum: AppObject.ROLE,
-    default: AppObject.ROLE.BASIC,
+    enum: UserRole,
+    default: UserRole.User,
   })
   role: string;
 
@@ -45,11 +46,26 @@ export class User {
     type: [
       {
         user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-        status: { type: String, enum: AppObject.RELATIONSHIPS },
+        date: { type: Date },
       },
     ],
   })
-  relationships: { user: User; status: string }[];
+  friends: { user: User; date: Date }[];
+
+  @Prop({
+    type: [
+      {
+        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        date: { type: Date },
+      },
+    ],
+  })
+  friendReqs: { user: User; date: Date }[];
+
+  @Prop({
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  })
+  blockList: User[];
 }
 
 const UserSchema = SchemaFactory.createForClass(User);
